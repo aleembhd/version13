@@ -321,6 +321,12 @@
             callbackCard.addEventListener('click', () => toggleCallDetails('Callback'));
             interestedCard.addEventListener('click', () => toggleCallDetails('Interested'));
 
+            // Add this new code for the monthly button
+            const monthlyBtn = document.getElementById('monthlyBtn');
+            monthlyBtn.addEventListener('click', function() {
+                window.location.href = 'monthly_calls.html';
+            });
+
             // ... (keep the existing event listeners and functions)
         });
 

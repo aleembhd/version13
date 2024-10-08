@@ -296,6 +296,133 @@
             showCallDetails('Interested');
         }
 
+        // Update the print functionality
+        function printCallDetails() {
+            const title = document.querySelector('.dashboard-title').textContent;
+            const currentStatus = document.querySelector('.call-details-card h2').textContent;
+            const tableContent = document.querySelector('.call-details-table').cloneNode(true);
+            
+            // Remove action buttons and dustbin icons from the cloned table
+            tableContent.querySelectorAll('.whatsapp-btn, .call-btn, .dustbin-icon').forEach(el => el.remove());
+            
+            // Remove the last column (Actions) if it's empty
+            const headerRow = tableContent.querySelector('thead tr');
+            const dataRows = tableContent.querySelectorAll('tbody tr');
+            if (headerRow.lastElementChild.textContent.trim() === 'Actions') {
+                headerRow.lastElementChild.remove();
+                dataRows.forEach(row => row.lastElementChild.remove());
+            }
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>${title} - ${currentStatus}</title>
+                    <style>
+                        body {
+                            font-family: Arial, sans-serif;
+                            padding: 20px;
+                            max-width: 210mm;
+                            margin: 0 auto;
+                        }
+                        h1, h2 {
+                            text-align: center;
+                            color: #333;
+                        }
+                        h1 { font-size: 1.5em; }
+                        h2 { font-size: 1.2em; }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 20px;
+                        }
+                        th, td {
+                            border: 1px solid #ddd;
+                            padding: 8px;
+                            text-align: left;
+                            font-size: 0.9em;
+                        }
+                        th {
+                            background-color: #f2f2f2;
+                        }
+                        .print-btn {
+                            display: block;
+                            width: 100%;
+                            max-width: 200px;
+                            margin: 20px auto;
+                            padding: 10px;
+                            background-color: #007bff;
+                            color: white;
+                            border: none;
+                            border-radius: 5px;
+                            cursor: pointer;
+                        }
+                        @media print {
+                            .print-btn {
+                                display: none;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <h1>${title}</h1>
+                    <h2>${currentStatus}</h2>
+                    <div style="overflow-x: auto;">
+                        ${tableContent.outerHTML}
+                    </div>
+                    <button class="print-btn" onclick="window.print()">Print</button>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        // Add this new function to handle clearing specific call details
+        function clearCallDetails(status) {
+            if (confirm(`Are you sure you want to clear all ${status} call details?`)) {
+                const database = firebase.database();
+                const callsRef = database.ref('calls');
+
+                callsRef.once('value', snapshot => {
+                    const updates = {};
+                    snapshot.forEach(childSnapshot => {
+                        const call = childSnapshot.val();
+                        if (status === 'Total' || call.status === status) {
+                            updates[childSnapshot.key] = null;
+                        }
+                    });
+
+                    callsRef.update(updates)
+                        .then(() => {
+                            console.log(`${status} call details cleared successfully`);
+                            // Update the UI immediately after successful deletion
+                            updateUIAfterClearing(status);
+                        })
+                        .catch(error => {
+                            console.error('Error clearing call details:', error);
+                        });
+                });
+            }
+        }
+
+        function updateUIAfterClearing(status) {
+            // Remove the cleared calls from the callData.details array
+            if (status === 'Total') {
+                callData.details = [];
+            } else {
+                callData.details = callData.details.filter(call => call.status !== status);
+            }
+
+            // Update the summary numbers
+            updateSummaryNumbers();
+
+            // Refresh the call details view
+            showCallDetails(status);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const totalCallsCard = document.getElementById('totalCallsCard');
             const notInterestedCard = document.querySelector('.notinterestedcard');
@@ -327,7 +454,20 @@
                 window.location.href = 'monthly_calls.html';
             });
 
-            // ... (keep the existing event listeners and functions)
+            // Add event listener for Print button
+            const printBtn = document.getElementById('printBtn');
+            if (printBtn) {
+                printBtn.addEventListener('click', printCallDetails);
+            }
+
+            // Add event listener for Clear All button
+            const clearAllBtn = document.getElementById('clearAllBtn');
+            if (clearAllBtn) {
+                clearAllBtn.addEventListener('click', function() {
+                    const status = this.getAttribute('data-status');
+                    clearCallDetails(status);
+                });
+            }
         });
 
         // ... (keep the rest of the existing code)

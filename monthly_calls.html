@@ -112,7 +112,7 @@
             <h1 class="dashboard-title">Monthly Calls Dashboard</h1>
             <div class="header-buttons">
                 <button class="btn btn-dark" id="backBtn">Back</button>
-                <button class="btn" id="settingsBtn">⚙️</button>
+                <!-- <button class="btn" id="settingsBtn">⚙️</button> -->
             </div>
         </div>
 
@@ -307,7 +307,7 @@
             const backBtn = document.getElementById('backBtn');
             if (backBtn) {
                 backBtn.addEventListener('click', function() {
-                    window.close(); // Close the current window
+                    window.history.back(); // Navigate to the previous page
                 });
             }
 
@@ -618,7 +618,19 @@
             // Update the print functionality
             function printMonthlyCalls() {
                 const title = document.querySelector('.dashboard-title').textContent;
-                const tableContent = document.querySelector('.call-details-table').outerHTML;
+                const currentStatus = document.querySelector('.call-details-card h2').textContent;
+                const tableContent = document.querySelector('.call-details-table').cloneNode(true);
+                
+                // Remove action buttons and dustbin icons from the cloned table
+                tableContent.querySelectorAll('.whatsapp-btn, .call-btn, .dustbin-icon').forEach(el => el.remove());
+                
+                // Remove the last column (Actions) if it's empty
+                const headerRow = tableContent.querySelector('thead tr');
+                const dataRows = tableContent.querySelectorAll('tbody tr');
+                if (headerRow.lastElementChild.textContent.trim() === 'Actions') {
+                    headerRow.lastElementChild.remove();
+                    dataRows.forEach(row => row.lastElementChild.remove());
+                }
 
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write(`
@@ -627,7 +639,7 @@
                     <head>
                         <meta charset="UTF-8">
                         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                        <title>${title}</title>
+                        <title>${title} - ${currentStatus}</title>
                         <style>
                             body {
                                 font-family: Arial, sans-serif;
@@ -635,11 +647,12 @@
                                 max-width: 210mm;
                                 margin: 0 auto;
                             }
-                            h1 {
+                            h1, h2 {
                                 text-align: center;
                                 color: #333;
-                                font-size: 1.5em;
                             }
+                            h1 { font-size: 1.5em; }
+                            h2 { font-size: 1.2em; }
                             table {
                                 width: 100%;
                                 border-collapse: collapse;
@@ -649,6 +662,7 @@
                                 border: 1px solid #ddd;
                                 padding: 8px;
                                 text-align: left;
+                                font-size: 0.9em;
                             }
                             th {
                                 background-color: #f2f2f2;
@@ -674,8 +688,9 @@
                     </head>
                     <body>
                         <h1>${title}</h1>
+                        <h2>${currentStatus}</h2>
                         <div style="overflow-x: auto;">
-                            ${tableContent}
+                            ${tableContent.outerHTML}
                         </div>
                         <button class="print-btn" onclick="window.print()">Print</button>
                     </body>
